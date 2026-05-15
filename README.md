@@ -4,9 +4,11 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white)
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-2.x-orange?logo=tensorflow&logoColor=white)
-![Keras](https://img.shields.io/badge/Keras-Deep%20Learning-red?logo=keras&logoColor=white)
-![Accuracy](https://img.shields.io/badge/Test%20Accuracy-94.12%25-brightgreen)
+![Accuracy](https://img.shields.io/badge/Test%20Accuracy-93.93%25-brightgreen)
 ![Status](https://img.shields.io/badge/Status-Complete-brightgreen)
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Lnathea/Fashion-MNIST-Classification/blob/main/fashion_mnist_complete.ipynb)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://fashion-mnist-classification-g8w4yaleg6vy3y9kbpme3n.streamlit.app)
 
 ---
 
@@ -45,9 +47,11 @@ Motivasi utama: *"Seberapa akurat model CNN sederhana bisa membedakan 10 kategor
 ```
 fashion-mnist-classification/
 │
-├── 📓 fashion_mnist_complete.ipynb   ← Notebook utama (semua part)
-├── 🌐 fashion_app.py                 ← Streamlit web app
-├── 📦 best_cnn_model.keras           ← Model CNN terbaik
+├── 📓 fashion_mnist_complete.ipynb   ← Notebook utama (Part 1 + 2 + 3)
+├── 🌐 app.py                         ← Streamlit web app
+├── 📦 fashion_model.onnx             ← Model CNN (format ONNX)
+├── 🗃️ sample_images.npy              ← Sample gambar untuk demo
+├── 🗃️ sample_labels.npy              ← Label sample gambar
 ├── 📄 requirements.txt
 └── 📄 README.md
 ```
@@ -58,35 +62,37 @@ fashion-mnist-classification/
 
 ### Part 1 — Data Exploration & Preprocessing
 - Load dataset langsung dari Keras (tidak perlu download manual)
-- Visualisasi sampel gambar per kategori
-- Analisis distribusi kelas → dataset sangat seimbang (6,000/kelas)
+- Visualisasi sampel gambar tiap kategori (6,000 gambar/kelas, sangat seimbang)
 - Analisis distribusi pixel dan rata-rata gambar per kelas
-- **Preprocessing**: Normalisasi (0–255 → 0–1), Reshape (28,28) → (28,28,1), One-hot encoding
+- **Preprocessing**: Normalisasi (0–255 → 0–1), Reshape → (28,28,1), One-hot encoding
+- Split: 48,000 train / 12,000 validation / 10,000 test
 
 ### Part 2 — Modeling & Training
 
 **Model 1: Dense Neural Network (Baseline)**
 ```
-Flatten → Dense(512) → Dropout → Dense(256) → Dropout → Dense(10, Softmax)
+Flatten(784) → Dense(512) → Dropout(0.3) → Dense(256) → Dropout(0.3) → Dense(10, Softmax)
+Parameter: 535,818
 ```
 
 **Model 2: CNN (Model Utama)**
 ```
-Conv2D(32) × 2 → MaxPool → Dropout
-Conv2D(64) × 2 → MaxPool → Dropout
-Dense(256) → Dropout → Dense(10, Softmax)
+Conv2D(32)×2 → MaxPool → Dropout(0.25)
+Conv2D(64)×2 → MaxPool → Dropout(0.25)
+Dense(256) → Dropout(0.5) → Dense(10, Softmax)
+Parameter: 872,426
 ```
 
 Training menggunakan:
-- **EarlyStopping** (patience=7, restore best weights)
-- **ModelCheckpoint** (save best model)
+- **EarlyStopping** (patience=7, restore best weights) — berhenti di epoch 28
+- **ModelCheckpoint** (save best val_accuracy)
 - **ReduceLROnPlateau** (factor=0.5, patience=3)
 
 ### Part 3 — Evaluasi & Visualisasi
 - Confusion matrix (absolut + persentase per kelas)
 - Classification report: Precision, Recall, F1 per kelas
 - Visualisasi prediksi benar vs salah
-- Analisis error — pasangan kelas yang paling sering tertukar
+- Analisis error — kelas yang paling sering tertukar
 - Visualisasi filter CNN dan feature maps
 
 ---
@@ -95,57 +101,59 @@ Training menggunakan:
 
 | Model | Test Accuracy | Test Loss | Parameter |
 |---|---|---|---|
-| Dense NN (Baseline) | ~88% | ~0.33 | ~670K |
-| **CNN (Main)** ⭐ | **94.12%** | **0.1908** | **~420K** |
+| Dense NN (Baseline) | 89.93% | 0.3170 | 535,818 |
+| **CNN (Main)** ⭐ | **93.93%** | **0.1830** | **872,426** |
 
-> CNN lebih akurat **dan** lebih efisien dari Dense NN
+> CNN lebih akurat **+4.00%** dibanding Dense NN
 
-### 📊 F1-Score per Kelas
+### 📊 F1-Score per Kelas (Hasil Aktual)
 
-| Kelas | F1-Score | Keterangan |
+| Kelas | F1-Score | Error Rate |
 |---|---|---|
-| 👖 Trouser | 0.992 | 🏆 Terbaik |
-| 👜 Bag | 0.988 | ✅ Sangat Baik |
-| 👡 Sandal | 0.985 | ✅ Sangat Baik |
-| 👟 Sneaker | 0.975 | ✅ Sangat Baik |
-| 🥾 Ankle boot | 0.973 | ✅ Sangat Baik |
-| 👗 Dress | 0.935 | ✅ Baik |
-| 🧥 Pullover | 0.911 | ✅ Baik |
-| 👕 T-shirt/top | 0.906 | ✅ Baik |
-| 🧥 Coat | 0.898 | 🟡 Cukup |
-| 👔 Shirt | 0.811 | ⚠️ Tersulit |
-
-> Shirt paling sulit karena secara visual mirip dengan T-shirt dan Pullover
+| 👖 Trouser | 0.993 | 1.0% |
+| 👜 Bag | 0.989 | 1.3% |
+| 👡 Sandal | 0.989 | 1.2% |
+| 👟 Sneaker | 0.973 | 2.2% |
+| 🥾 Ankle boot | 0.975 | 2.9% |
+| 👗 Dress | 0.943 | 5.2% |
+| 🧥 Pullover | 0.913 | 8.2% |
+| 🧥 Coat | 0.910 | 9.5% |
+| 👕 T-shirt/top | 0.888 | 11.5% |
+| 👔 Shirt | 0.821 | **17.7%** ⚠️ |
 
 ---
 
 ## 💡 Key Insights
 
-- 👖 **Trouser, Bag, Sneaker** paling mudah diklasifikasi karena bentuknya unik
-- 👔 **Shirt** paling sering salah — tertukar dengan T-shirt/top karena sangat mirip secara visual
-- 🧠 **CNN lebih efisien dari Dense NN** — parameter lebih sedikit tapi akurasi lebih tinggi
-- 📦 **BatchNormalization + Dropout** sangat membantu mencegah overfitting
+- 👖 **Trouser, Bag, Sandal** paling mudah diklasifikasi (F1 > 0.98) karena bentuknya unik dan berbeda jauh dari kelas lain
+- 👔 **Shirt paling sulit** (error rate 17.7%) — sering tertukar dengan T-shirt/top (81 kali dari 1,000 gambar)
+- 🎯 **9,393 dari 10,000 gambar** diprediksi benar
+- 🧠 CNN lebih efisien: parameter lebih banyak tapi pola yang dipelajari jauh lebih relevan untuk data gambar
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Library | Versi | Kegunaan |
-|---|---|---|
-| `tensorflow` | 2.x | Build & train model |
-| `keras` | Built-in | API neural network |
-| `numpy` | 1.23+ | Manipulasi array gambar |
-| `matplotlib` | 3.6+ | Visualisasi |
-| `seaborn` | 0.12+ | Confusion matrix |
-| `scikit-learn` | 1.2+ | Classification report |
-| `streamlit` | 1.28+ | Web app deployment |
-| `pillow` | 9.0+ | Image processing |
+| Library | Kegunaan |
+|---|---|
+| `tensorflow` / `keras` | Build & train model CNN |
+| `onnxruntime` | Inferensi model di Streamlit (ringan, tanpa TensorFlow) |
+| `numpy` | Manipulasi array gambar |
+| `matplotlib` | Visualisasi training history & confusion matrix |
+| `seaborn` | Confusion matrix heatmap |
+| `scikit-learn` | Classification report |
+| `streamlit` | Web app deployment |
+| `pillow` | Image processing (upload gambar) |
 
 ---
 
 ## 🚀 Cara Menjalankan
 
-**Opsi 1 — Google Colab (Rekomendasi)**
+**Opsi 1 — Streamlit Web App (Live Demo)**
+
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://fashion-mnist-classification-g8w4yaleg6vy3y9kbpme3n.streamlit.app)
+
+**Opsi 2 — Google Colab**
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Lnathea/Fashion-MNIST-Classification/blob/main/fashion_mnist_complete.ipynb)
 
@@ -153,12 +161,12 @@ Training menggunakan:
 2. Aktifkan GPU: `Runtime → Change runtime type → T4 GPU`
 3. `Runtime → Run all` — selesai dalam ~10 menit
 
-**Opsi 2 — Lokal**
+**Opsi 3 — Lokal**
 ```bash
 git clone https://github.com/Lnathea/Fashion-MNIST-Classification.git
 cd Fashion-MNIST-Classification
 pip install -r requirements.txt
-streamlit run fashion_app.py
+streamlit run app.py
 ```
 
 ---
@@ -174,7 +182,8 @@ streamlit run fashion_app.py
 ## 👤 Author
 
 **Muhammad Afriza Hidayat**
-Mahasiswa Teknologi Informasi | Data & AI Enthusiast | Telkom University Jakarta
+Mahasiswa Teknik Informatika | Data & AI Enthusiast
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?logo=linkedin)](https://www.linkedin.com/in/afriza)
 [![GitHub](https://img.shields.io/badge/GitHub-Follow-black?logo=github)](https://github.com/Lnathea)
+[![Streamlit](https://img.shields.io/badge/Live%20Demo-Streamlit-red?logo=streamlit)](https://fashion-mnist-classification-g8w4yaleg6vy3y9kbpme3n.streamlit.app)
